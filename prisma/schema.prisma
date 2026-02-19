@@ -1,0 +1,153 @@
+// Cash for Trash - San Diego Rescue Mission
+// Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Staff user accounts
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(STAFF)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  shiftsCreated      Shift[]              @relation("ShiftCreator")
+  paymentsIssued     GiftCardPayment[]    @relation("PaymentIssuer")
+  homeworkAssigned   HomeworkAssignment[] @relation("HomeworkAssigner")
+  outcomesRecorded   DestinationOutcome[] @relation("OutcomeRecorder")
+  participantsAdded  Participant[]        @relation("ParticipantCreator")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+}
+
+// Program participants (people experiencing homelessness)
+model Participant {
+  id             String   @id @default(cuid())
+  firstName      String
+  lastName       String
+  preferredName  String?
+  phone          String?
+  email          String?
+  photoUrl       String?
+  enrollmentDate DateTime @default(now())
+  isActive       Boolean  @default(true)
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdById    String?
+
+  // Relations
+  createdBy  User?                @relation("ParticipantCreator", fields: [createdById], references: [id])
+  shifts     Shift[]
+  payments   GiftCardPayment[]
+  homework   HomeworkAssignment[]
+  outcomes   DestinationOutcome[]
+}
+
+// Work shifts with clock in/out and bag counting
+model Shift {
+  id            String    @id @default(cuid())
+  participantId String
+  clockIn       DateTime  @default(now())
+  clockOut      DateTime?
+  bagsCollected Int       @default(0)
+  location      String?
+  notes         String?
+  createdById   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  participant Participant       @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  createdBy   User?             @relation("ShiftCreator", fields: [createdById], references: [id])
+  payment     GiftCardPayment?
+}
+
+// Gift card payments - $80 fixed, weekly limit, $2000 lifetime cap
+model GiftCardPayment {
+  id            String   @id @default(cuid())
+  participantId String
+  shiftId       String?  @unique
+  amount        Int      @default(80) // Always $80
+  issuedAt      DateTime @default(now())
+  issuedById    String?
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  // Relations
+  participant Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  shift       Shift?      @relation(fields: [shiftId], references: [id])
+  issuedBy    User?       @relation("PaymentIssuer", fields: [issuedById], references: [id])
+}
+
+// Homework assignments for participants
+model HomeworkAssignment {
+  id            String    @id @default(cuid())
+  participantId String
+  title         String
+  description   String?
+  assignedDate  DateTime  @default(now())
+  dueDate       DateTime?
+  isCompleted   Boolean   @default(false)
+  completedDate DateTime?
+  assignedById  String?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  participant Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  assignedBy  User?       @relation("HomeworkAssigner", fields: [assignedById], references: [id])
+}
+
+// Destination outcomes tracking - housing, employment, benefits, documents
+model DestinationOutcome {
+  id                  String           @id @default(cuid())
+  participantId       String
+  recordedAt          DateTime         @default(now())
+  housingStatus       HousingStatus    @default(STREET)
+  otherHousingDetails String?          // Free text when housingStatus is OTHER
+  employmentStatus    EmploymentStatus @default(NONE)
+  benefits            String           @default("") // Comma-separated: SNAP,MEDI_CAL,SSI,etc.
+  documentsObtained   String           @default("") // Comma-separated: ID,BIRTH_CERT,SSN_CARD,etc.
+  notes               String?
+  recordedById        String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  // Relations
+  participant Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  recordedBy  User?       @relation("OutcomeRecorder", fields: [recordedById], references: [id])
+}
+
+enum HousingStatus {
+  STREET
+  SHELTER
+  TRANSITIONAL
+  SRO              // Single Room Occupancy
+  SOBER_LIVING
+  ILF              // Independent Living Facility
+  PERMANENT
+  OTHER            // Custom - requires otherHousingDetails
+}
+
+enum EmploymentStatus {
+  NONE
+  TRAINING
+  PART_TIME
+  FULL_TIME
+}
