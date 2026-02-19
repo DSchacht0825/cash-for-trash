@@ -1,18 +1,20 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { Pool } from "pg";
+import pg from "pg";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
 function createPrismaClient() {
-  const connectionString = process.env.DATABASE_URL;
-
-  // Create a new pool for each request in serverless
-  const pool = new Pool({
-    connectionString,
-    max: 1, // Limit connections for serverless
+  // Parse connection from environment or use individual params
+  const pool = new pg.Pool({
+    host: "aws-0-us-west-2.pooler.supabase.com",
+    port: 6543,
+    database: "postgres",
+    user: "postgres.gxyfnlqtrdylczjasxst",
+    password: process.env.DB_PASSWORD || "Sandiegorescuemission",
+    ssl: { rejectUnauthorized: false },
   });
 
   const adapter = new PrismaPg(pool);
