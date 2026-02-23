@@ -15,8 +15,6 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useSession } from "next-auth/react";
-
 interface SidebarProps {
   isOpen?: boolean;
   onClose?: () => void;
@@ -30,16 +28,11 @@ const navigation = [
   { name: "Homework", href: "/homework", icon: BookOpen },
   { name: "Outcomes", href: "/outcomes", icon: Home },
   { name: "Reports", href: "/reports", icon: BarChart3 },
-];
-
-const adminNavigation = [
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const { data: session } = useSession();
-  const isAdmin = session?.user?.role === "ADMIN";
 
   return (
     <>
@@ -91,32 +84,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               })}
             </div>
 
-            {isAdmin && (
-              <div className="pt-4 mt-4 border-t border-[var(--border)]">
-                <p className="px-3 mb-2 text-xs font-semibold text-[var(--muted-foreground)] uppercase">
-                  Admin
-                </p>
-                {adminNavigation.map((item) => {
-                  const isActive = pathname === item.href;
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      onClick={onClose}
-                      className={cn(
-                        "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                        isActive
-                          ? "bg-[var(--primary)] text-white"
-                          : "text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]"
-                      )}
-                    >
-                      <item.icon className="h-5 w-5" />
-                      {item.name}
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
           </nav>
 
           {/* Footer */}
