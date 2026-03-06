@@ -7,7 +7,7 @@ import { hash } from "bcryptjs";
 const connectionString = process.env.DIRECT_URL;
 console.log("Connecting to:", connectionString?.replace(/:[^:@]+@/, ":****@"));
 
-const pool = new pg.Pool({ connectionString });
+const pool = new pg.Pool({ connectionString, ssl: { rejectUnauthorized: false } });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 

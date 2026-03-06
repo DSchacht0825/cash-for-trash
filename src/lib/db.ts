@@ -7,13 +7,14 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient() {
-  // Parse connection from environment or use individual params
+  const connectionString = process.env.DATABASE_URL;
+
+  if (!connectionString) {
+    throw new Error("DATABASE_URL environment variable is not set");
+  }
+
   const pool = new pg.Pool({
-    host: "aws-0-us-west-2.pooler.supabase.com",
-    port: 6543,
-    database: "postgres",
-    user: "postgres.gxyfnlqtrdylczjasxst",
-    password: process.env.DB_PASSWORD || "Sandiegorescuemission",
+    connectionString,
     ssl: { rejectUnauthorized: false },
   });
 
